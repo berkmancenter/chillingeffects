@@ -2,6 +2,7 @@ class Ability
   include CanCan::Ability
 
   def initialize(user)
+    # anonymous user
     can :request_access_token, Notice do |notice|
       !notice&.submitter&.full_notice_only_researchers
     end
@@ -12,6 +13,7 @@ class Ability
 
     return unless user
 
+    # notice_viewer role
     if user.role?(Role.notice_viewer)
       if user.can_generate_permanent_notice_token_urls
         can :generate_permanent_notice_token_urls, Notice do |notice|
@@ -20,10 +22,8 @@ class Ability
       end
 
       can_view_full_version = true
-
       can_view_full_version = false if user.notice_viewer_views_limit && user.notice_viewer_viewed_notices >= user.notice_viewer_views_limit
       can_view_full_version = false if user.notice_viewer_time_limit && Time.now > user.notice_viewer_time_limit
-
       if can_view_full_version
         can :view_full_version, Notice do |notice|
           full_notice_only_researchers?(notice, user)
@@ -31,13 +31,16 @@ class Ability
       end
     end
 
+    # submitter role
     can :submit, Notice if user.role?(Role.submitter)
 
+    # redactor role
     if user.role?(Role.redactor)
       grant_admin_access
       grant_redact
     end
 
+    # publisher role
     if user.role?(Role.publisher)
       grant_admin_access
       grant_redact
@@ -45,6 +48,7 @@ class Ability
       can :publish, Notice
     end
 
+    # admin role
     if user.role?(Role.admin)
       grant_admin_access
       grant_redact
@@ -63,6 +67,7 @@ class Ability
       can %i[index show create update read manage], 'Cms::Site'
     end
 
+    # super_admin role
     if user.role?(Role.super_admin)
       grant_full_notice_api_response(user)
 
@@ -70,6 +75,7 @@ class Ability
       can :view_full_version, Notice
     end
 
+    # researcher role
     if user.role?(Role.researcher)
       grant_full_notice_api_response(user)
 
@@ -77,8 +83,20 @@ class Ability
       can :view_full_version, Notice do |notice|
         full_notice_only_researchers?(notice, user)
       end
+
+      if user.can_generate_permanent_notice_token_urls
+        can :generate_permanent_notice_token_urls, Notice do |notice|
+          full_notice_only_researchers?(notice, user) &&
+            (
+              !notice&.submitter&.full_notice_only_researchers ||
+              (notice&.submitter&.full_notice_only_researchers && user.allow_generate_permanent_tokens_researchers_only_notices)
+            )
+        end
+      end
     end
   end
+
+  private
 
   def grant_admin_access
     can :read, :all

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_02_23_193057) do
+ActiveRecord::Schema.define(version: 2021_03_02_193920) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -456,6 +456,7 @@ ActiveRecord::Schema.define(version: 2021_02_23_193057) do
     t.integer "notice_viewer_viewed_notices", default: 0, null: false
     t.datetime "notice_viewer_time_limit"
     t.boolean "limit_notice_api_response", default: false, null: false
+    t.boolean "allow_generate_permanent_tokens_researchers_only_notices"
     t.index ["authentication_token"], name: "index_users_on_authentication_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
